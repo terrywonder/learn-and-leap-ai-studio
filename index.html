@@ -1,24 +1,135 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="openai-portal-game" content="learn-and-leap"><meta name="theme-color" content="#101c2d"><meta name="description" content="Learn & Leap Adventure v15.0: 100 playable educational levels in ten distinct fantasy worlds with world-specific mechanics, three languages and five age groups."><title>Learn & Leap Adventure — 100-Level World Variety Adventure</title><link rel="stylesheet" href="src/style.css"></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="openai-portal-game" content="learn-and-leap">
+  <meta name="theme-color" content="#0a1924">
+  <meta name="description" content="100-level 10-world 2.5D fantasy educational platformer for Malaysian students (ages 5-16+, EN/BM/中文), with biome physics mechanics, articulated Ari animation, Rootkeeper boss battles, 60 FPS mobile performance mode, and OpenAI.com.my Portal SDK v3.1.0.">
+  <meta property="og:title" content="Learn & Leap Adventure v15.0 — OpenAI.com.my">
+  <meta property="og:description" content="100-level 10-world 2.5D fantasy educational platformer with biome mechanics, articulated heroes, guardian boss battles, and multilingual learning shrines.">
+  <title>Learn &amp; Leap Adventure v15.0 — OpenAI.com.my</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/style.css">
+</head>
+<body data-state="title">
 <main class="game-shell">
- <div class="game-frame" id="frame">
-  <canvas id="world" width="1280" height="720" tabindex="0" aria-label="Learn and Leap fantasy platform game"></canvas>
-  <div class="vignette"></div>
-  <header class="hud" id="hud" hidden>
-   <div class="hud-left"><div class="avatar">✦</div><div><div class="hearts" id="hearts">♥ ♥ ♥</div><div class="hud-mini" id="hudLevel">WHISPERING WOODS · 01</div></div></div>
-   <div class="hud-center"><span class="hud-pill">✧ <b id="coins">0</b></span><span class="hud-pill">✦ <b id="energy">0</b></span><span class="hud-pill keys" id="keys">◇ ◇ ◇ ◇</span></div>
-   <div class="hud-right"><button id="pauseBtn" class="hud-btn" aria-label="Pause" title="Pause Game">Ⅱ</button></div>
-  </header>
-  <div id="missionTag" class="mission-tag" aria-live="polite"></div>
-  <div id="hint" class="floating-hint" hidden></div>
-  <div id="toast" class="toast" aria-live="polite"></div>
-  <div id="screen" class="screen" role="region" aria-label="Game menu"><div id="screenBody"></div></div>
-  <div id="question" class="question-backdrop" hidden><section class="question-card" role="dialog" aria-modal="true" aria-labelledby="questionTitle"><div class="rune-top">✧ <span id="questionSubject"></span> ✧</div><h2 id="questionTitle"></h2><p class="challenge-instruction" id="challengeInstruction"></p><div id="answers" class="answers"></div><p class="question-feedback" id="feedback" aria-live="polite"></p><div class="question-foot"><button id="hintBtn" class="link-btn"></button><button id="closeQuestion" class="link-btn"></button></div></section></div>
-  <div class="touch-controls" id="touchControls" hidden><div class="touch-left"><button data-control="left" aria-label="Move left"><span class="tc-ico">◀</span><small class="tc-lbl">LEFT</small></button><button data-control="right" aria-label="Move right"><span class="tc-ico">▶</span><small class="tc-lbl">RIGHT</small></button></div><div class="touch-right"><button data-control="interact" class="interact" aria-label="Answer Quiz Shrine"><span class="tc-ico">✧</span><small class="tc-lbl">QUIZ</small></button><button data-control="attack" class="attack" aria-label="Cast Magic"><span class="tc-ico">✦</span><small class="tc-lbl">MAGIC</small></button><button data-control="jump" class="jump" aria-label="Jump"><span class="tc-ico">↑</span><small class="tc-lbl">JUMP</small></button></div></div>
- </div>
- <div class="outside-note"><span>✦ LEARN & LEAP <span class="muted">· v15.0 FULL ADVENTURE</span></span><span class="desktop-guide">← → Move · Space Jump · E Quiz · J Magic · Esc Pause</span><span class="mobile-guide">Use the top O.A.I. bar for Main Page, Start Game, Full Screen &amp; Exit</span></div>
+  <div class="game-frame" id="frame">
+    <canvas id="world" width="1280" height="720" tabindex="0" data-testid="game-canvas" aria-label="Learn and Leap fantasy platform game"></canvas>
+    <div class="vignette"></div>
+
+    <!-- World-Matched Fantasy Adventure HUD -->
+    <header class="hud" id="hud" hidden>
+      <div class="hud-left">
+        <div class="avatar" aria-hidden="true">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
+            <circle cx="18" cy="18" r="16" stroke="#f7dc92" stroke-width="1.5" opacity="0.7"/>
+            <path d="M18 5L21.2 13.8L30 17L21.2 20.2L18 29L14.8 20.2L6 17L14.8 13.8L18 5Z" fill="url(#ariCrest)" stroke="#173b34" stroke-width="1.2"/>
+            <circle cx="18" cy="17" r="3" fill="#fffdf0"/>
+            <defs>
+              <linearGradient id="ariCrest" x1="18" y1="5" x2="18" y2="29" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fff8c8"/>
+                <stop offset="0.55" stop-color="#a8f0c0"/>
+                <stop offset="1" stop-color="#3e8c72"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="hud-vitality">
+          <div class="hearts" id="hearts" aria-label="Health">♥ ♥ ♥</div>
+          <div class="hud-mini" id="hudLevel">WHISPERING WOODS · 01</div>
+        </div>
+      </div>
+
+      <div class="hud-center" aria-label="Adventure resources">
+        <div class="hud-stat" title="Golden Coins">
+          <svg class="hud-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <circle cx="12" cy="12" r="9.5" fill="#f3b732" stroke="#182b24" stroke-width="2"/>
+            <circle cx="12" cy="12" r="6.8" fill="none" stroke="#fff3b8" stroke-width="1.4"/>
+            <path d="M12 7.5L13.3 10.7L16.5 12L13.3 13.3L12 16.5L10.7 13.3L7.5 12L10.7 10.7L12 7.5Z" fill="#fff9db"/>
+          </svg>
+          <span class="hud-stat-val"><b id="coins">0</b><small>COINS</small></span>
+        </div>
+        <div class="hud-sep" aria-hidden="true"></div>
+        <div class="hud-stat" title="Arcane Magic">
+          <svg class="hud-ico" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 2.5L15 9L21.5 12L15 15L12 21.5L9 15L2.5 12L9 9L12 2.5Z" fill="#7ff7c4" stroke="#112f2e" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="12" cy="12" r="2.6" fill="#ffffff"/>
+          </svg>
+          <span class="hud-stat-val"><b id="energy">0</b><small>MAGIC</small></span>
+        </div>
+        <div class="hud-sep" aria-hidden="true"></div>
+        <div class="hud-stat keys-wrap" title="Awakened Rune Keys">
+          <span class="keys" id="keys">◇ ◇ ◇ ◇</span>
+          <small class="keys-kicker">RUNES</small>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <button id="soundHudBtn" class="hud-btn" tabindex="-1" aria-label="Toggle Sound" title="Toggle Sound (M)">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.25"/>
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path id="soundWavePath" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>
+          </svg>
+        </button>
+        <button id="pauseBtn" class="hud-btn" tabindex="-1" aria-label="Pause" title="Pause Game (Esc / P)">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <rect x="6" y="4" width="4.2" height="16" rx="1.5"/>
+            <rect x="13.8" y="4" width="4.2" height="16" rx="1.5"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="missionTag" class="mission-tag" aria-live="polite" hidden></div>
+    <div id="hint" class="floating-hint" hidden></div>
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <div id="screen" class="screen" role="region" aria-label="Game menu">
+      <div id="screenBody"></div>
+    </div>
+
+    <div id="question" class="question-backdrop" hidden>
+      <section class="question-card" role="dialog" aria-modal="true" aria-labelledby="questionTitle">
+        <div class="rune-top">✧ <span id="questionSubject"></span> ✧</div>
+        <h2 id="questionTitle"></h2>
+        <p class="challenge-instruction" id="challengeInstruction"></p>
+        <div id="answers" class="answers"></div>
+        <p class="question-feedback" id="feedback" aria-live="polite"></p>
+        <div class="question-foot">
+          <button id="hintBtn" class="link-btn"></button>
+          <button id="closeQuestion" class="link-btn"></button>
+        </div>
+      </section>
+    </div>
+
+    <div class="touch-controls" id="touchControls" hidden>
+      <div class="touch-left">
+        <button data-control="left" aria-label="Move left"><span class="tc-ico">◀</span><small class="tc-lbl">LEFT</small></button>
+        <button data-control="right" aria-label="Move right"><span class="tc-ico">▶</span><small class="tc-lbl">RIGHT</small></button>
+      </div>
+      <div class="touch-right">
+        <button data-control="dash" class="dash" aria-label="Spirit Dash"><span class="tc-ico">»</span><small class="tc-lbl">DASH</small></button>
+        <button data-control="interact" class="interact" aria-label="Answer Quiz Shrine"><span class="tc-ico">✧</span><small class="tc-lbl">QUIZ</small></button>
+        <button data-control="attack" class="attack" aria-label="Cast Magic"><span class="tc-ico">✦</span><small class="tc-lbl">MAGIC</small></button>
+        <button data-control="jump" class="jump" aria-label="Jump"><span class="tc-ico">↑</span><small class="tc-lbl">JUMP</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="outside-note">
+    <span>LEARN &amp; LEAP <span class="muted">· v15.0 FULL ADVENTURE · 10 WORLDS · 100 CHAPTERS</span></span>
+    <span class="desktop-guide">← → Move · Space Double Jump · Shift Dash · E Shrine · J Magic · Esc Pause</span>
+    <span class="mobile-guide">Tap arrows to move · Double-tap Jump for Spirit Leap · Use top bar for Full Screen</span>
+  </div>
 </main>
+
 <noscript><div class="fatal">JavaScript is required to play. Open the hosted HTTPS website in Safari or Chrome, not a file preview.</div></noscript>
 <div id="runtimeError" class="fatal" hidden role="alert" aria-live="assertive"></div>
+
 <script>
 (function(){
  const show=(msg)=>{const box=document.getElementById('runtimeError');if(box){box.hidden=false;box.style.display='grid';box.textContent='Game could not start: '+msg+' — Open the HTTPS website in Safari or Chrome, and check that the src/ files were uploaded.';}};
@@ -26,7 +137,8 @@
  window.addEventListener('load',()=>{setTimeout(()=>{if(!window.__LEAP_DEBUG__)show('Game engine did not initialize. Open the hosted website in Safari or Chrome.')},2500)});
 })();
 </script>
-<script src="./shared/portal-sdk.js?v=3.1.0" onerror="var s=document.createElement('script');s.src='../shared/portal-sdk.js?v=3.1.0';document.head.appendChild(s)"></script>
+<script src="../shared/portal-sdk.js?v=3.1.0"></script>
 <script src="src/diversity_v13.js"></script><script src="src/world1_v14.js"></script><script src="src/worlds_v15.js"></script><script src="src/curriculum.js"></script><script src="src/levels.js"></script>
 <script type="module" src="src/main.js"></script>
-</body></html>
+</body>
+</html>
