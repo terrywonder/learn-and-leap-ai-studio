@@ -1,0 +1,29 @@
+{
+  "release": "v14.6.0-rear-foot-correction",
+  "baseline_archive_sha256": "6eded43361a1fbe35d4a7cce067c73bc50db470ee6fee4f979b2f8b4d49a8a0b",
+  "created_utc": "2026-11-07",
+  "status": "development candidate; staging QA pending",
+  "source_files_changed": [
+    "src/animation.js",
+    "src/premium.js",
+    "index.html",
+    "package.json",
+    "README.md"
+  ],
+  "new_files": [
+    "assets/animation/ari/rear-boot-forward-v146.png",
+    "docs/ARI_RUN_FINAL_APPROVED_REFERENCE.png",
+    "tests/v146_rear_foot.cjs",
+    "tests/v146_pose_capture.py",
+    "tests/v146_browser_preview.py",
+    "ANTIGRAVITY_V146_DEPLOYMENT.md",
+    "V146_DEVELOPMENT_QA.md"
+  ],
+  "test_expectation_updates": [
+    "tests/v7_animation.cjs",
+    "tests/v143_visual_polish.cjs",
+    "tests/v145_ankle_rig.cjs"
+  ],
+  "game_data_changed": false,
+  "production_deployment": "not authorized"
+}

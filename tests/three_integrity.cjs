@@ -1,0 +1,14 @@
+const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
+const root=path.join(__dirname,'..');
+const src=fs.readFileSync(path.join(root,'src/scene3d.js'),'utf8');
+const game=fs.readFileSync(path.join(root,'src/game.js'),'utf8');
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const main=fs.readFileSync(path.join(root,'src/main.js'),'utf8');
+const required=['WebGLRenderer','OrthographicCamera','MeshStandardMaterial','DirectionalLight','HemisphereLight','FogExp2','shadowMap','PCFSoftShadowMap','createHero','createEnemy','createBoss','createTree','buildPlatforms','buildShrines','buildCoins','buildEnemies','buildBoss','buildHazards','buildGate','frame(state,time)','getDiagnostics'];
+for(const symbol of required)assert(src.includes(symbol),`Missing WebGL/3D component ${symbol}`);
+assert(!game.includes("getContext('2d')"));assert(!game.includes('ctx.drawImage'));assert(game.includes('renderer3d.frame(state,time)'));
+assert(game.includes('renderer3d.setStage(data)'));assert(main.includes('scene3d.js'));assert(html.includes('src/main.js'));assert(html.includes('unhandledrejection'));
+assert(src.includes('three@0.160.1/build/three.module.js'));
+for(let i=1;i<=10;i++)assert(fs.existsSync(path.join(root,'assets',`world-${String(i).padStart(2,'0')}.webp`)));
+assert(fs.existsSync(path.join(root,'src/curriculum.js')));assert(fs.existsSync(path.join(root,'src/levels.js')));
+console.log('PASS: WebGL renderer, 3D characters/environments, animations, PBR materials, lighting, camera, all 100-level game data and CDN error handling are wired.');

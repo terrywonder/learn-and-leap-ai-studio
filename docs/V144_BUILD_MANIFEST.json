@@ -1,0 +1,23 @@
+{
+  "version": "14.4.0-natural-stride-integration",
+  "baseline_archive": "Learn-and-Leap-Adventure-v14.3-Professional-Visual-Pass-Antigravity-Under20MB.zip",
+  "baseline_archive_sha256": "83c5a2b5b8c4855310313c7838cccb89b2258334138d8221055dcc3f3f402f93",
+  "all_previous_asset_files_sha256_identical": true,
+  "assets_checked": 95,
+  "modified_source_files": [
+    "src/animation.js",
+    "src/animation_v12.js",
+    "src/premium.js",
+    "package.json",
+    "index.html",
+    "tests/v143_visual_polish.cjs"
+  ],
+  "new_files": [
+    "tests/v144_stride.cjs",
+    "tests/v144_browser_preview.py",
+    "tests/v144_visual_runtime.py",
+    "V144_RELEASE_AND_QA.md",
+    "ANTIGRAVITY_V144_DEPLOYMENT.md",
+    "docs/V144_BUILD_MANIFEST.json"
+  ]
+}

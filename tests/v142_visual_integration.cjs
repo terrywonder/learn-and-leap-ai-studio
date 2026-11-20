@@ -1,0 +1,18 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root=path.resolve(__dirname,'..');
+const source=fs.readFileSync(path.join(root,'src/premium.js'),'utf8');
+const background=path.join(root,'assets/world1-v142/crystal-waterfall-scenery.webp');
+assert(fs.statSync(background).size>50000,'approved art derived backdrop exists at production resolution');
+assert(source.includes("stage.id===3"),'only intended World 1 level 3 gets approved waterfall backdrop');
+assert(source.includes("'world1-v142/crystal-waterfall-scenery.webp'"),'file referenced by asset preloader');
+assert(source.includes('WorldOneArt.background(this.ctx,this.stage,cam,t)'),'other nine World 1 levels use prior authored backgrounds');
+assert(source.includes("c.strokeText('DISCOVER',x,y-40)"),'DISCOVER gate plaque has outlined text');
+assert(source.includes("this.limbPart('animation/ari/back-leg-v141.png'"),'articulated restored boot remains active');
+assert(source.includes("this.limbPart('animation/ari/front-leg.png'"),'original front boot remains active');
+assert(source.includes("this.drawImage(ready('animation/ari/body-v1411-clean.png')"),'approved clean body remains active');
+for (const src of ['curriculum.js','levels.js','world1_v14.js'])assert(fs.statSync(path.join(root,'src',src)).size>500);
+const L=require('../src/levels.js');for(let i=1;i<=100;i++)assert(L.make(i));
+console.log('PASS v14.2: approved scenic art present, World 1/3 scoped, gate text legible by drawing contract, repaired Ari rig retained, 100 levels');

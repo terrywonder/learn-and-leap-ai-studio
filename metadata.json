@@ -1,0 +1,6 @@
+{
+  "name": "Learn & Leap Adventure v15.0 — OpenAI.com.my",
+  "description": "100-level 10-world 2.5D fantasy educational platformer for Malaysian students (ages 5-16+, EN/BM/中文), with biome physics mechanics, articulated Ari animation, Rootkeeper boss battles, 60 FPS mobile performance mode, and OpenAI.com.my Portal SDK v3.1.0.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

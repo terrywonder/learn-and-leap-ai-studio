@@ -1,0 +1,8 @@
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');
+let Skia;try{Skia=require('skia-canvas')}catch{console.log('SKIP: skia-canvas is optional. Install it separately to generate pixel-render QA images.');process.exit(0)}const {Canvas,Image}=Skia;
+globalThis.Image=Image;globalThis.matchMedia=()=>({matches:false});
+const root=path.resolve(__dirname,'..');process.chdir(root);require(path.join(root,'src/levels.js'));
+(async()=>{const source=fs.readFileSync(path.join(root,'src/premium.js'),'utf8').replace('export class PainterWorld','class PainterWorld')+'\nglobalThis.PainterWorld=PainterWorld;';const vm=require('node:vm');vm.runInThisContext(source,{filename:'premium.js'});await new Promise(r=>setTimeout(r,700));const canvas=new Canvas(1280,720);const scene=new globalThis.PainterWorld(canvas);let n=0;
+for(const id of [1,10,11,20,100]){let d=globalThis.LeapLevels.make(id);d.enemies.forEach((e,i)=>{e.alive=true;e.phase=i*.5});d.coins.forEach(c=>{c.got=false});scene.setStage(d);
+ const state={scene:'play',player:{x:id===10?d.bossX-220:620,y:d.ground-62,vx:120,vy:0,h:62,face:1,inv:0,run:5,grounded:true},levelData:d,camera:id===10?d.bossX-850:150,keys:0,projectiles:[],particles:[],bossHp:3};scene.frame(state,2000);const stats=scene.getDiagnostics();assert.equal(stats.level,id);assert.equal(stats.renderSize[0],1280);n++;if(id===1)fs.writeFileSync(path.join(root,'docs','actual-world1-render.png'),await canvas.toBuffer('png'));if(id===10)fs.writeFileSync(path.join(root,'docs','actual-rootkeeper-render.png'),await canvas.toBuffer('png'));}
+console.log('PASS: rendered',n,'actual playable-level scenes with skia canvas; 100-level gameplay tests run separately.');})();

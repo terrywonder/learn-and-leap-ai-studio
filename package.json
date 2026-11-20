@@ -1,0 +1,20 @@
+{
+  "name": "learn-and-leap-adventure-full-worlds",
+  "version": "15.0.0-development",
+  "private": true,
+  "description": "Full 100-level educational adventure: ten worlds with playable biome mechanics, distinct scenic rendering, approved Ari and Rootkeeper artwork, 60fps mobile optimizer, and OpenAI.com.my Portal SDK v3.1.0 (Google AI Studio Workspace).",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --port=3000 --host=0.0.0.0",
+    "start": "vite preview --port=3000 --host=0.0.0.0",
+    "test": "node tests/full100.cjs && node tests/art_integrity.cjs && node tests/three_integrity.cjs && node tests/renderer_construction.cjs && node tests/premium_integrity.cjs && node tests/world1_environment_v6.cjs && node tests/v7_animation.cjs && node tests/v11_rootkeeper.cjs && node tests/v12_animation.cjs && node tests/v13_diversity.cjs && node tests/v14_world1.cjs && node tests/v141_integrity.cjs && node tests/v1411_integrity.cjs && node tests/v142_visual_integration.cjs && node tests/v1421_ari_gait.cjs && node tests/v143_visual_polish.cjs && node tests/v144_stride.cjs && node tests/v145_ankle_rig.cjs && node tests/v146_rear_foot.cjs && node tests/v15_full_game.cjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "license": "UNLICENSED"
+}
