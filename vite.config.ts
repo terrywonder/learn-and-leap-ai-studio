@@ -1,8 +1,8 @@
-import fs from 'node:fs';
+﻿import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
-import * as geminiFn from './server/gemini.mjs';
+import * as geminiFn from './server/gemini.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
