@@ -25,7 +25,7 @@ artList.push(...Array.from({length:10},(_,i)=>`stage-forest/${String(i+1).padSta
 artList.push('world1-v142/crystal-waterfall-scenery.webp'); // Previous scenic plate kept for comparison/rollback.
 artList.push('world1-v143/mistwalk-cinematic-scenery.webp');
 artList.push(...['forest','mushroom','waterfall','timber','temple','firefly','swamp','cave','storm','sacred'].map(k=>`world1-v143/${k}-stone-moss.webp`));
-const articulatedAssets=["animation/ari/body-v1411-clean.png", "animation/ari/cape.png", "animation/ari/rear-arm.png", "animation/ari/back-leg-v141.png", "animation/ari/front-leg.png", "animation/ari/rear-shin-v145.png", "animation/ari/rear-boot-v145.png", "animation/ari/rear-boot-forward-v146.png", "animation/ari/front-shin-v145.png", "animation/ari/front-boot-v145.png", "animation/ari/front-arm-v1411-clean.png", "animation/glow-frog/body.png", "animation/glow-frog/tail.png", "animation/glow-frog/left-leg.png", "animation/glow-frog/right-leg.png"];artList.push(...articulatedAssets);
+const articulatedAssets=["animation/ari/head-cheerful-v16.png", "animation/ari/body-v1411-clean.png", "animation/ari/cape.png", "animation/ari/rear-arm.png", "animation/ari/back-leg-v141.png", "animation/ari/front-leg.png", "animation/ari/rear-shin-v145.png", "animation/ari/rear-boot-v145.png", "animation/ari/rear-boot-forward-v146.png", "animation/ari/front-shin-v145.png", "animation/ari/front-boot-v145.png", "animation/ari/front-arm-v1411-clean.png", "animation/glow-frog/body.png", "animation/glow-frog/tail.png", "animation/glow-frog/left-leg.png", "animation/glow-frog/right-leg.png"];artList.push(...articulatedAssets);
 // v11 replaces visible primitive body geometry with a single seamless, bone-deformed
 // illustration exported as compact animation atlases. Original IK rig remains archived.
 const ROOTKEEPER_V11_COUNTS={idle:12,stalk:16,attack:24,hurt:12,defeat:16};
@@ -402,7 +402,7 @@ const c=this.ctx;const sym={math:'∑',english:'Aa',science:'⚗',general:'✧'}
   c.translate(x,feet);
   c.scale(player.face===-1?-1:1,1);
   c.scale(softSx*fx.turnScale*athleticScale,softSy*athleticScale);
-  drawAthleticAri(c,skel);
+  drawAthleticAri(c,skel,{headImg:ready('animation/ari/head-cheerful-v16.png')});
   if(fx.castGlow>0.05&&skel.frontArm?.hand){
    this.vfx.drawGlow(c,skel.frontArm.hand.x+4,skel.frontArm.hand.y-1,38*fx.castGlow,'cyan',.75*fx.castGlow);
   }
