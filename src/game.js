@@ -29,7 +29,7 @@ function worldLabel(){return `${txt('world')} ${String(Math.floor((state.level-1
 function formatTime(sec){const s=Math.max(0,Math.round(sec));const m=Math.floor(s/60);return `${m}:${String(s%60).padStart(2,'0')}`}
 
 function titleCrestSVG(){
- return `<svg class="title-crest" viewBox="0 0 420 128" role="img" aria-label="Learn and Leap">
+ return `<svg class="title-crest" viewBox="0 0 540 122" role="img" aria-label="Learn and Leap">
   <defs>
    <linearGradient id="goldTitle" x1="0" y1="0" x2="0" y2="1">
     <stop offset="0%" stop-color="#fffbe4"/>
@@ -42,14 +42,14 @@ function titleCrestSVG(){
    </linearGradient>
   </defs>
   <g transform="translate(0, 6)">
-   <path d="M12 20H118" stroke="#f2cf84" stroke-width="1.2" opacity="0.55"/>
-   <path d="M164 20H270" stroke="#f2cf84" stroke-width="1.2" opacity="0.55"/>
-   <path d="M141 6L145 16L155 20L145 24L141 34L137 24L127 20L137 16L141 6Z" fill="url(#emeraldStar)" stroke="#123029" stroke-width="1.4"/>
-   <circle cx="141" cy="20" r="2.6" fill="#fffdf0"/>
-   <text x="6" y="78" font-family="'Cinzel', Georgia, serif" font-weight="900" font-size="54" letter-spacing="2" fill="#0b2029" dx="0" dy="4">LEARN &amp; LEAP</text>
-   <text x="6" y="78" font-family="'Cinzel', Georgia, serif" font-weight="900" font-size="54" letter-spacing="2" fill="url(#goldTitle)" stroke="#2c2416" stroke-width="1.2" paint-order="stroke fill">LEARN &amp; LEAP</text>
-   <path d="M8 94L280 94" stroke="#f3d48c" stroke-width="1.5" opacity="0.65"/>
-   <polygon points="286,94 294,89 302,94 294,99" fill="#f7da8b"/>
+   <path d="M8 20H185" stroke="#f2cf84" stroke-width="1.2" opacity="0.58"/>
+   <path d="M235 20H412" stroke="#f2cf84" stroke-width="1.2" opacity="0.58"/>
+   <path d="M210 6L214 16L224 20L214 24L210 34L206 24L196 20L206 16L210 6Z" fill="url(#emeraldStar)" stroke="#123029" stroke-width="1.4"/>
+   <circle cx="210" cy="20" r="2.6" fill="#fffdf0"/>
+   <text x="4" y="79" font-family="'Cinzel', Georgia, serif" font-weight="900" font-size="52" letter-spacing="2.2" fill="#0b2029" dx="0" dy="4">LEARN &amp; LEAP</text>
+   <text x="4" y="79" font-family="'Cinzel', Georgia, serif" font-weight="900" font-size="52" letter-spacing="2.2" fill="url(#goldTitle)" stroke="#2c2416" stroke-width="1.2" paint-order="stroke fill">LEARN &amp; LEAP</text>
+   <path d="M6 96L416 96" stroke="#f3d48c" stroke-width="1.5" opacity="0.65"/>
+   <polygon points="424,96 432,91 440,96 432,101" fill="#f7da8b"/>
   </g>
  </svg>`;
 }

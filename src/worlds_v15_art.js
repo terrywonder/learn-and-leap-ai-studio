@@ -68,16 +68,29 @@ function stageSignature(c,d,cam,t){
 }
 export function paintExpeditionBackdrop(c,d,cam,t,ready){const w=d.world,p=P[w],v=d.v15;
  c.save();const g=c.createLinearGradient(0,0,0,720);g.addColorStop(0,p[0]);g.addColorStop(.55,p[1]);g.addColorStop(1,p[2]);c.fillStyle=g;c.fillRect(0,0,1280,720);
- // Existing illustrated plates are used as distant atmosphere, not stretched platform art.
- const img=ready(`world-${String(w+1).padStart(2,'0')}.webp`);if(img){c.globalAlpha=.3;c.drawImage(img,-40-cam*.012,-25,1370,775);c.globalAlpha=1;}
- const sky=c.createRadialGradient(980,80,5,900,120,590);sky.addColorStop(0,p[2]+'80');sky.addColorStop(1,p[2]+'00');c.fillStyle=sky;c.fillRect(0,0,1280,600);
- if(w===7||w===8||w===1){for(let i=0;i<100;i++){const x=rnd(i*8+d.id)*1280,y=rnd(i*14+d.id)*430;circle(c,x,y,1+(i%3)*.5,'#f7f4ff9c')}}
- if(w===4){cloud(c,970,126,130);cloud(c,270,98,90)}
- if(w===7){circle(c,1060,125,84,'#e2f3d2a3');circle(c,1080,109,81,p[0])}
- if(w===8){circle(c,1010,85,48,'#fff7d1c4');glow(c,1010,85,180,'#f7dcb663')}
- for(let i=0;i<8;i++){const x=i*210-(cam*.05%210),size=.6+rnd(i*17+d.id)*.7;mountain(c,x,510,365*size,220*size,p[4],w===4?p[2]:null)}
- sceneGeometry(c,d,cam,t);stageSignature(c,d,cam,t);
- const mist=c.createLinearGradient(0,330,0,590);mist.addColorStop(0,p[2]+'00');mist.addColorStop(1,p[2]+'5a');c.fillStyle=mist;c.fillRect(0,300,1280,290);
+ // High-res illustrated biome plate forms the rich painterly sky & distant panorama.
+ const img=ready(`world-${String(w+1).padStart(2,'0')}.webp`);
+ if(img){
+  const pan=Math.sin(cam*.00048)*22;
+  c.globalAlpha=.84;c.drawImage(img,-26-pan,-10,1332,740);
+  c.globalAlpha=1;
+  const harmony=c.createLinearGradient(0,0,0,720);
+  harmony.addColorStop(0,p[0]+'44');harmony.addColorStop(.55,p[1]+'18');harmony.addColorStop(1,p[5]+'78');
+  c.fillStyle=harmony;c.fillRect(0,0,1280,720);
+ }
+ const sky=c.createRadialGradient(980,80,5,900,120,590);sky.addColorStop(0,p[2]+'58');sky.addColorStop(1,p[2]+'00');c.fillStyle=sky;c.fillRect(0,0,1280,600);
+ if(w===7||w===8||w===1){for(let i=0;i<70;i++){const x=rnd(i*8+d.id)*1280,y=rnd(i*14+d.id)*420;circle(c,x,y,1+(i%3)*.5,'#f7f4ff88')}}
+ if(!img){
+  if(w===4){cloud(c,970,126,130);cloud(c,270,98,90)}
+  if(w===7){circle(c,1060,125,84,'#e2f3d2a3');circle(c,1080,109,81,p[0])}
+  if(w===8){circle(c,1010,85,48,'#fff7d1c4');glow(c,1010,85,180,'#f7dcb663')}
+  for(let i=0;i<8;i++){const x=i*210-(cam*.05%210),size=.6+rnd(i*17+d.id)*.7;mountain(c,x,510,365*size,220*size,p[4],w===4?p[2]:null)}
+  sceneGeometry(c,d,cam,t);
+ }
+ c.globalAlpha=img?.24:.82;
+ stageSignature(c,d,cam,t);
+ c.globalAlpha=1;
+ const mist=c.createLinearGradient(0,360,0,610);mist.addColorStop(0,p[2]+'00');mist.addColorStop(1,p[2]+'42');c.fillStyle=mist;c.fillRect(0,360,1280,250);
  c.restore();}
 export function paintExpeditionTerrain(c,d,x,y,w,h,index=0,platform=false,ready){if(w<1||h<1)return;const theme=P[d.world],kind=d.v15.kind;const dark=theme[5],mid=theme[4],light=theme[3],top=theme[2];c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
  c.fillStyle=dark;c.fillRect(x,y,w,h);const tile=ready('premium/moss_stone.webp');if(tile&&kind!=='sky'){c.globalAlpha=.14;for(let xx=x;xx<x+w;xx+=230)c.drawImage(tile,xx,y,235,175);c.globalAlpha=1;}

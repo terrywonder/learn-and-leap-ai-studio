@@ -5,6 +5,9 @@ import {paintExpeditionBackdrop,paintExpeditionTerrain,paintExpeditionDetails} f
 import {evaluateRootkeeperPose,drawRootkeeperRig} from './rootkeeper_rig.js';
 import {HeroAnimationMixer,RootkeeperAnimationMixer,atlasCoordinates,bossState} from './animation_v12.js';
 import {AAAVisualEngine} from './vfx_aaa.js';
+import {evaluateMonsterMotion,evaluateBossMotion,evaluateHeroMotionFX} from './creature_anim.js';
+import {evaluateAriSkeleton} from './ari_rig.js';
+import {drawAthleticAri} from './ari_renderer.js';
 /**
  * Learn & Leap — playable cinematic illustrated 2.5D renderer.
  * This is a real scene renderer. It uses foreground/midground scenery art,
@@ -30,6 +33,7 @@ const ROOTKEEPER_V11_FILES=Object.keys(ROOTKEEPER_V11_COUNTS).map(k=>`animation/
 artList.push(...ROOTKEEPER_V11_FILES);
 const images={};for(const path of artList){if(images[path])continue;const img=new Image();img.decoding='async';img.src=`assets/${path}`;images[path]=img}
 function ready(k){const img=images[k];return img?.complete&&(img.naturalWidth||img.width)>0?img:null}
+if(typeof window!=='undefined')window.__LEAP_READY__=ready;
 function color(world){return [['#8dd4bd','#b8df75','#fff0b4'],['#c6b5ed','#97afff','#dfbbff'],['#a7d9ff','#cbe8b5','#fff4bd'],['#ffb07e','#d7aa54','#ffd7a5'],['#c4f1f7','#a8dbec','#efffff'],['#9eddd4','#64cfc6','#feeab9'],['#c8c2f1','#b6d8cb','#ffd8a3'],['#9ea6e0','#93c1b1','#dfeccb'],['#aea7f5','#b0bfed','#fff7c7'],['#edc9e5','#cbb7ef','#ffe6bb']][world]}
 function pathRound(ctx,x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 export class PainterWorld{
@@ -119,9 +123,17 @@ export class PainterWorld{
  }
  platforms(d,cam,t){const c=this.ctx;for(let i=0;i<d.platforms.length;i++){const p=d.platforms[i],x=p.x-cam;if(x>WIDTH+70||x+p.w<-70)continue;
   const h=82+hash(i*3)*15;this._v14Platform=p;this.tileTerrain(x,p.y,p.w,h,i,true);this._v14Platform=null;
-  // short roots and hanging vines; uses real x/collision placement
-  c.strokeStyle='#245e34';for(let j=0;j<7;j++){const px=x+(j+.5)*p.w/7;const ext=12+hash(i*60+j)*48;c.lineWidth=2+hash(j)*2;c.beginPath();c.moveTo(px,p.y+h-5);c.quadraticCurveTo(px+8,p.y+h+ext*.3,px-5,p.y+h+ext);c.stroke()}
-  if(i%2===0)this.bush(x+p.w*.14,p.y+3,.46,i);
+  if(d.world===0){
+   // Lush forest roots, hanging vines & blossoms for Whispering Woods
+   c.strokeStyle='#245e34';for(let j=0;j<7;j++){const px=x+(j+.5)*p.w/7;const ext=12+hash(i*60+j)*48;c.lineWidth=2+hash(j)*2;c.beginPath();c.moveTo(px,p.y+h-5);c.quadraticCurveTo(px+8,p.y+h+ext*.3,px-5,p.y+h+ext);c.stroke()}
+   if(i%2===0)this.bush(x+p.w*.14,p.y+3,.46,i);
+  }else{
+   // Biome-matched undersides (icicles, magma shards, crystal tips, brass brackets, coral)
+   const underCol=['#5e994d','#b794f4','#d8f2ff','#ff8f42','#c8f5ff','#6ee7d8','#eab354','#7edbb4','#d6b8ff','#f6d486'][d.world]||'#a8d4e6';
+   c.save();c.fillStyle=underCol;c.globalAlpha=.55;
+   for(let j=0;j<5;j++){const px=x+(j+.5)*p.w/5,ext=10+hash(i*41+j)*22;c.beginPath();c.moveTo(px-6,p.y+h-2);c.lineTo(px,p.y+h+ext);c.lineTo(px+6,p.y+h-2);c.closePath();c.fill();}
+   c.restore();
+  }
  }}
  drawCoin(x,y,t,index){const c=this.ctx;const bobY=y+Math.sin(t*.0032+index)*4.5;const dx=Math.cos(t*.0024+index*.45)*.22+.78;this.vfx.drawGlow(c,x,bobY,32,'gold',.52);c.save();c.translate(x,bobY);c.scale(dx,1);const grd=c.createLinearGradient(-17,-12,18,18);grd.addColorStop(0,'#fffad1');grd.addColorStop(.3,'#f8c63d');grd.addColorStop(.68,'#e89a1c');grd.addColorStop(1,'#8c4a12');c.fillStyle=grd;c.strokeStyle='#fff4bf';c.lineWidth=2.6;c.beginPath();c.ellipse(0,0,15,18,0,0,TAU);c.fill();c.stroke();c.strokeStyle='#9e5e10';c.lineWidth=1.8;c.beginPath();c.ellipse(0,0,10,13,0,0,TAU);c.stroke();c.fillStyle='#fff4ba';c.font='bold 18px Georgia';c.textAlign='center';c.fillText('✦',0,6);c.restore()}
  /** v14.2.1: approximate painted boot-sole contact from the actual joint and sole locations.
@@ -181,33 +193,69 @@ export class PainterWorld{
   c.restore();return true;
  }
 
- rigCreature(type,img,x,y,w,h,pose){
+ rigCreature(type,img,x,y,w,h,pose,motion=null){
   const c=this.ctx,head='animation/glow-frog/';
   if(type==='rootkeeper')return this.rigRootkeeper(x,y,w,h,pose);
   if(!ready(head+'body.png'))return false;
-  c.save();c.translate(x,y+pose.bob);c.scale(w/img.naturalWidth,h/img.naturalHeight*pose.scaleY);c.rotate(pose.bodyLean);
-  this.limbPart(head+'tail.png',[70,117],pose.tail);
-  this.limbPart(head+'left-leg.png',[60,139],pose.legs[0]);this.limbPart(head+'right-leg.png',[154,139],pose.legs[1]);
-  this.limbPart(head+'body.png',[106,110],0);c.restore();return true;
+  const m=motion||{facing:1,turnScale:1,hopY:pose.bob||0,scaleX:1,scaleY:pose.scaleY||1,shearX:0,tilt:pose.bodyLean||0};
+  const sw=img.naturalWidth||220,sh=img.naturalHeight||220;
+  const cx=x+w*.5,by=y+h;
+  // Sync frog leg extension smoothly to real hop height so legs never flail robotically
+  const airFactor=clamp(-m.hopY/20,0,1);
+  const legKick=airFactor*.36-.08*(1-airFactor);
+  c.save();
+  c.translate(cx,by+m.hopY);
+  c.scale(m.facing*m.turnScale*m.scaleX,m.scaleY);
+  if(m.shearX)c.transform(1,0,m.shearX*.65,1,0,0);
+  c.rotate(m.tilt*.85);
+  c.scale(w/sw,h/sh);
+  c.translate(-sw*.5,-sh);
+  this.limbPart(head+'tail.png',[70,117],(pose.tail||0)*.55-airFactor*.18);
+  this.limbPart(head+'left-leg.png',[60,139],-legKick);
+  this.limbPart(head+'right-leg.png',[154,139],legKick*.85);
+  this.limbPart(head+'body.png',[106,110],0);
+  c.restore();return true;
  }
- // Articulate the lower-left and lower-right pixels independently for all other illustrated monsters.
- // This is a fallback deformation until those creatures receive individual limb rigs.
- elasticCreature(img,x,y,w,h,pose){const c=this.ctx,sw=img.naturalWidth,sh=img.naturalHeight,cut=sh*.63;
-  c.save();c.translate(x,y+pose.bob);c.scale(w/sw,h/sh*pose.scaleY);c.rotate(pose.bodyLean);
-  c.drawImage(img,0,0,sw,cut,0,0,sw,cut);
-  for(let i=0;i<2;i++){const px=i*sw/2,angle=pose.legs[i]*.85;
-   c.save();c.translate(px+sw/4,cut);c.rotate(angle);c.drawImage(img,px,cut,sw/2,sh-cut,-sw/4,0,sw/2,sh-cut);c.restore()}
-  c.restore();}
+ // Seamless grounded bottom-pivot elastic locomotion (replaces harsh rectangular cutout slicing
+ // while keeping the illustrated creature artwork 100% unified, expressive, and weighted).
+ elasticCreature(img,x,y,w,h,pose,motion=null){
+  const c=this.ctx;
+  const m=motion||{facing:1,turnScale:1,hopY:pose?.bob||0,scaleX:1,scaleY:pose?.scaleY||1,shearX:0,tilt:pose?.bodyLean||0,hurtFlash:0,defeatFade:1};
+  const cx=x+w*.5,by=y+h;
+  c.save();
+  if(m.defeatFade!==undefined&&m.defeatFade<1)c.globalAlpha*=clamp(m.defeatFade,0.05,1);
+  c.translate(cx,by+m.hopY);
+  c.scale(m.facing*m.turnScale*m.scaleX,m.scaleY);
+  if(m.shearX)c.transform(1,0,m.shearX,1,0,0);
+  if(m.tilt)c.rotate(m.tilt);
+  c.drawImage(img,-w*.5,-h,w,h);
+  if(m.hurtFlash>0.08){
+   c.globalCompositeOperation='lighter';
+   c.globalAlpha=m.hurtFlash*.52;
+   c.drawImage(img,-w*.5,-h,w,h);
+  }
+  c.restore();
+ }
  drawEnemies(d,cam,t,state){const c=this.ctx;for(let i=0;i<d.enemies.length;i++){const e=d.enemies[i];if(!e.alive)continue;const x=e.x-cam;if(x<-140||x>WIDTH+140)continue;const index=Variety.enemyIndex(d.id,i);const key=`foe-${String(index).padStart(2,'0')}.webp`,img=ready(key);if(!img)continue;
-   const size=87+(e.kind%2)*8,near=state?.player?Math.abs(state.player.x-e.x)<150:0,ptype=index===1?'glow-frog':index===3?'rootkeeper':'fallback',pose=creaturePose(t,i+e.phase,ptype,near?1:0);
-   c.save();c.fillStyle='#061e1c78';c.beginPath();c.ellipse(x,d.ground+4,size*.30,6,0,0,TAU);c.fill();
-   if(near){this.vfx.drawGlow(c,x,d.ground-size*.45,48,'ember',.28);}
-   const dx=x-size/2,dy=d.ground-size+12;
+   const size=87+(e.kind%2)*8,near=state?.player?Math.abs(state.player.x-e.x)<155:0,ptype=index===1?'glow-frog':index===3?'rootkeeper':'fallback',pose=creaturePose(t,i+e.phase,ptype,near?1:0);
+   const motion=evaluateMonsterMotion(e,t,state?.player,index);
+   c.save();
+   // Height-responsive grounded shadow
+   c.fillStyle=`rgba(5,26,28,${motion.shadowAlpha.toFixed(2)})`;
+   c.beginPath();c.ellipse(x,d.ground+3,size*.31*motion.shadowScale,6.2*motion.shadowScale,0,0,TAU);c.fill();
+   // Alert / float aura glow
+   if(motion.alert>0.12){this.vfx.drawGlow(c,x,d.ground-size*.45+motion.hopY,50,'ember',.22+motion.alert*.24);}
+   else if(motion.archetype==='floater'){this.vfx.drawGlow(c,x,d.ground-size*.45+motion.hopY,42,index===2||index===9?'violet':'cyan',.22);}
+   const dx=x-size/2,dy=d.ground-size+10;
    if(ptype==='rootkeeper'){const dxTravel=e._rkX===undefined?0:e.x-e._rkX;
       e._rkDistance=(e._rkDistance||0)+Math.abs(dxTravel);e._rkX=e.x;
       const face=dxTravel>0?1:dxTravel<0?-1:(e._rkFace||1);e._rkFace=face;
       this.rigRootkeeper(dx,dy,size*.79,size,{mode:'stalk',locomotion:1,stridePhase:e._rkDistance/42+e.phase*.31,phase:(t*.0007)%1,time:t,facing:face});}
-   else if(ptype==='fallback'||!this.rigCreature(ptype,img,dx,dy,size,size,pose))this.elasticCreature(img,dx,dy,size,size,pose);
+   else if(ptype==='fallback'||!this.rigCreature(ptype,img,dx,dy,size,size,pose,motion))this.elasticCreature(img,dx,dy,size,size,pose,motion);
+   // Subtle monster landing/step dust cue
+   if((motion.justLanded||motion.footstep)&&this.footstepVisuals.length<24){
+    this.footstepVisuals.push({x,feet:d.ground+1,created:t,intensity:motion.justLanded?.55:.3,dir:motion.facing});
+   }
    c.restore();}
  }
  stageAtmosphere(d,cam,t){const c=this.ctx,m=Variety.stage(d.id);c.save();const kind=m.weather;
@@ -248,9 +296,18 @@ export class PainterWorld{
      c.beginPath();c.arc(x+130,d.ground-35,45+200*r,Math.PI*1.13,Math.PI*1.92);c.stroke();c.restore();}
    }
   }
-  if(!animated){const img=ready(d.world===0?'foe-03.webp':`boss-${String(d.world+1).padStart(2,'0')}.webp`);if(img){const pose=creaturePose(t,8,'fallback',state.bossPulse>0?1:0);this.elasticCreature(img,x-size*.49,d.ground-size+35,size*.98,size,pose)}}
+  if(!animated){
+   const img=ready(d.world===0?'foe-03.webp':`boss-${String(d.world+1).padStart(2,'0')}.webp`);
+   if(img){
+    const pose=creaturePose(t,8,'fallback',state.bossPulse>0?1:0);
+    const bm=evaluateBossMotion(state,t,d.world,state.player?.x??0,d.bossX);
+    c.fillStyle='rgba(5,20,24,0.52)';
+    c.beginPath();c.ellipse(x,d.ground+4,size*.34*bm.scaleX,12,0,0,TAU);c.fill();
+    if(bm.chargeGlow>0.1){this.vfx.drawGlow(c,x,d.ground-size*.45+bm.hopY,140,'ember',bm.chargeGlow*.55);}
+    this.elasticCreature(img,x-size*.49,d.ground-size+32,size*.98,size,pose,{facing:bm.facing,turnScale:1,hopY:bm.hopY,scaleX:bm.scaleX,scaleY:bm.scaleY,shearX:bm.shearX,tilt:bm.lean,hurtFlash:bm.hurtFlash,defeatFade:bm.defeatFade});
+   }
+  }
   c.restore();
-  if(state.bossHp>0){const g=c.createLinearGradient(x-90,0,x+90,0);g.addColorStop(0,'#f8d98b');g.addColorStop(1,'#7ef2b6');c.fillStyle='#061b20d0';pathRound(c,x-82,d.ground-bossHeight-29,164,16,7);c.fill();c.strokeStyle='#f5d98f99';c.lineWidth=1.5;c.stroke();c.fillStyle=g;pathRound(c,x-78,d.ground-bossHeight-26,156*(state.bossHp/(3+Math.floor(d.world/3))),10,5);c.fill()}
  }
  decorations(d,cam,t){if(d.v15){paintExpeditionDetails(this.ctx,d,cam,t);return;}if(d.world===0&&d.v14){WorldOneArt.featureObjects(this.ctx,d,cam,t);return;}const c=this.ctx;for(let i=0;i<Math.ceil(d.length/230);i++){const wx=i*234+hash(i*22+d.id)*110;const x=wx-cam;if(x<-180||x>WIDTH+180||d.pits.some(p=>wx>p.x&&wx<p.x+p.w))continue;if(d.world===0){if((i+d.stage)%3!==0)this.bush(x,d.ground+3,.60+hash(i*.8+d.id)*.52,i+d.id)}else if(i%3!==0)this.bush(x,d.ground+6,.65+hash(i*.8)*.50,i)}
    for(let i=0;i<d.hazards.length;i++){const h=d.hazards[i],x=h.x-cam;if(x<-100||x>WIDTH+100)continue;const pulse=Math.sin(t*.003+h.phase);c.save();if(!this.perfMode){c.shadowColor='#fa972b';c.shadowBlur=20;}c.fillStyle=h.kind===1?'#ff9e45':h.kind===3?'#a7edff':'#d9e7b4';c.globalAlpha=.6+.4*(pulse+1)/2;c.beginPath();c.moveTo(x-27,d.ground);c.lineTo(x,d.ground-50-pulse*20);c.lineTo(x+27,d.ground);c.closePath();c.fill();c.restore()}}
@@ -274,14 +331,24 @@ export class PainterWorld{
     c.fillStyle='#fff2ca';c.fillText(labels[s.subject],x,y+176);
     if(!s.done){for(let j=0;j<7;j++){const a=t*.0012+j*TAU/7;const px=x+Math.sin(a)*54,py=y+88+Math.cos(a)*36;c.fillStyle=color;c.globalAlpha=.52+.24*Math.sin(t*.002+j);c.fillRect(px,py,3.5,3.5)}}c.restore();
   }return}
-const c=this.ctx;const sym={math:'∑',english:'Aa',science:'⚗',general:'✧'},clr={math:'#ffce68',english:'#ba9aff',science:'#88f2c3',general:'#8eddfa'};
- for(const [i,s] of d.shrines.entries()){const x=s.x-cam;if(x<-120||x>WIDTH+120)continue;const y=d.ground-94;const glow=clr[s.subject];c.save();c.translate(x,y);c.globalAlpha=s.done?.48:1;
-  const g=c.createLinearGradient(0,-65,0,78);g.addColorStop(0,'#f2e0b1');g.addColorStop(1,'#4a6455');c.fillStyle=g;c.strokeStyle='#3e4c44';c.lineWidth=5;pathRound(c,-51,-45,102,132,36);c.fill();c.stroke();
-  c.fillStyle='#1e5252';c.beginPath();c.ellipse(0,9,35,49,0,0,TAU);c.fill();
-  const halo=c.createRadialGradient(0,2,4,0,2,69);halo.addColorStop(0,glow+'99');halo.addColorStop(1,glow+'00');c.fillStyle=halo;c.beginPath();c.arc(0,2,72,0,TAU);c.fill();
-  c.strokeStyle=glow;c.lineWidth=5;c.beginPath();c.ellipse(0,3,28,43,0,0,TAU);c.stroke();c.fillStyle='#fff9d8';c.font='bold 38px Georgia';c.textAlign='center';c.fillText(s.done?'✓':sym[s.subject],0,16);
-  c.fillStyle='#183938';c.strokeStyle='#f2d79a';c.lineWidth=2;pathRound(c,-59,82,118,26,8);c.fill();c.stroke();c.fillStyle='#fff9d9';c.font='bold 15px system-ui';c.fillText((s.subject==='general'?'DISCOVER':s.subject.toUpperCase()),0,101);
-  for(let j=0;j<10;j++){const a=t*.001+j*TAU/10;const px=Math.sin(a)*58,py=Math.cos(a)*45;c.fillStyle=glow;c.globalAlpha=s.done?.1:.55;c.fillRect(px-2,py-2,4,4)}c.restore();}}
+const c=this.ctx;const sym={math:'∑',english:'Aa',science:'⚗',general:'✧'},clr={math:'#ffce68',english:'#c8a8ff',science:'#88f2c3',general:'#8eddfa'};
+ for(const [i,s] of d.shrines.entries()){const x=s.x-cam;if(x<-120||x>WIDTH+120)continue;const y=d.ground-96;const glow=clr[s.subject];c.save();c.translate(x,y);c.globalAlpha=s.done?.55:1;
+  // Ornate carved stone shrine arch matching World 1 visual fidelity
+  const stone=c.createLinearGradient(0,-72,0,86);stone.addColorStop(0,'#697987');stone.addColorStop(.5,'#384858');stone.addColorStop(1,'#1e2c3a');
+  c.fillStyle=stone;c.strokeStyle='#e8ca85';c.lineWidth=3.2;pathRound(c,-56,-56,112,146,44);c.fill();c.stroke();
+  c.strokeStyle='rgba(255,244,205,0.28)';c.lineWidth=1.5;pathRound(c,-48,-48,96,130,38);c.stroke();
+  // Keystone gem at apex
+  c.fillStyle=glow;c.strokeStyle='#142732';c.lineWidth=2;c.beginPath();c.moveTo(0,-66);c.lineTo(10,-52);c.lineTo(0,-38);c.lineTo(-10,-52);c.closePath();c.fill();c.stroke();
+  // Luminous inner rune portal
+  const portal=c.createRadialGradient(0,6,4,0,6,56);portal.addColorStop(0,s.done?'#2a5f5f':'#3ea3b0');portal.addColorStop(.65,'#193c4d');portal.addColorStop(1,'#0d2332');
+  c.fillStyle=portal;c.beginPath();c.ellipse(0,8,36,52,0,0,TAU);c.fill();
+  c.strokeStyle=glow;c.lineWidth=3;c.beginPath();c.ellipse(0,8,32,48,0,0,TAU);c.stroke();
+  const bob=Math.sin(t*.0024+s.x)*4.5;
+  c.fillStyle='#fffbe2';c.font='bold 34px Georgia';c.textAlign='center';c.fillText(s.done?'✓':sym[s.subject],0,19+bob);
+  // Crisp bronze plaque
+  c.fillStyle='#0e2736';c.strokeStyle='#f2cf88';c.lineWidth=2.2;pathRound(c,-64,66,128,30,8);c.fill();c.stroke();
+  c.fillStyle='#fff4d2';c.font='800 15px system-ui, sans-serif';c.fillText((s.subject==='general'?'DISCOVER':s.subject.toUpperCase()),0,87);
+  for(let j=0;j<8;j++){const a=t*.0011+j*TAU/8;const px=Math.sin(a)*54,py=Math.cos(a)*44;c.fillStyle=glow;c.globalAlpha=s.done?.12:.58;c.fillRect(px-2,py-2,3.5,3.5)}c.restore();}}
  drawGate(d,cam,state,t){if(d.world===0){const c=this.ctx;const x=d.length-165-cam;if(x<-220||x>WIDTH+220)return;const y=d.ground;const unlocked=state.keys===4&&(!d.boss||state.bossHp===0);const img=ready('world1-v6/rune-shrine.png');c.save();c.globalAlpha=unlocked?1:.88;if(img){c.drawImage(img,x-119,y-264,238,285)}c.textAlign='center';c.fillStyle=unlocked?'#d2fff6':'#f9e7bc';c.font='bold 37px Georgia';c.fillText(unlocked?'✦':'◇',x,y-124);// Readable typography is drawn above the scene, never baked into scenery pixels.
   c.globalAlpha=1;
   c.fillStyle=unlocked?'#124d51':'#0d3545';c.strokeStyle='#f8d490';c.lineWidth=4;
@@ -289,27 +356,75 @@ const c=this.ctx;const sym={math:'∑',english:'Aa',science:'⚗',general:'✧'}
   c.font='900 21px system-ui, sans-serif';c.lineWidth=3.4;c.strokeStyle='#092634';
   c.strokeText('DISCOVER',x,y-40);c.fillStyle='#fff3ca';c.fillText('DISCOVER',x,y-40);
   if(unlocked){c.font='bold 12px system-ui';c.fillStyle='#c5fff1';c.fillText('OPEN',x,y-18);}
-  c.restore();return}const c=this.ctx;const x=d.length-165-cam;if(x<-160||x>WIDTH+160)return;const y=d.ground;const open=state.keys===4&&(!d.boss||state.bossHp===0);
- c.save();c.translate(x,y);const g=c.createLinearGradient(0,-220,0,0);g.addColorStop(0,'#c7a67a');g.addColorStop(.55,'#816957');g.addColorStop(1,'#514b3d');c.fillStyle=g;for(const dx of [-66,66]){c.fillRect(dx-22,-186,44,186);c.fillStyle='#c9b48b';c.fillRect(dx-22,-186,44,14);c.fillStyle=g}c.fillRect(-94,-220,188,36);c.fillStyle=open?'#71eaeaaa':'#19384abb';c.beginPath();c.ellipse(0,-95,54,93,0,0,TAU);c.fill();c.strokeStyle=open?'#bfffe9':'#ffeab0';c.lineWidth=9;c.stroke();c.font='bold 42px Georgia';c.fillStyle=open?'#d6ffea':'#b4c2a7';c.textAlign='center';c.fillText(open?'✦':'◇',0,-85);c.restore()}
- actor(state,cam,t){const c=this.ctx,player=state.scene==='title'?{x:865+Math.sin(t*.0006)*32,y:522,w:38,h:62,vx:40*Math.cos(t*.0006),vy:0,face:1,inv:0,run:t*.004,grounded:true}:state.player;if(!player)return;
+  c.restore();return}const c=this.ctx;const x=d.length-165-cam;if(x<-180||x>WIDTH+180)return;const y=d.ground;const open=state.keys===4&&(!d.boss||state.bossHp===0);
+ c.save();c.translate(x,y);
+ // Ornate monolithic Exit Arch for Worlds 2-10
+ const arch=c.createLinearGradient(0,-230,0,0);arch.addColorStop(0,'#7c8a98');arch.addColorStop(.5,'#455364');arch.addColorStop(1,'#24313f');
+ c.fillStyle=arch;c.strokeStyle='#f0cf88';c.lineWidth=4;pathRound(c,-94,-226,188,226,86);c.fill();c.stroke();
+ c.strokeStyle='rgba(255,244,210,0.32)';c.lineWidth=2;pathRound(c,-80,-212,160,204,74);c.stroke();
+ // Inner glowing portal
+ const pg=c.createRadialGradient(0,-105,8,0,-105,86);
+ pg.addColorStop(0,open?'#b8fff0':'#347088');pg.addColorStop(.55,open?'#299e9c':'#1a435a');pg.addColorStop(1,'#0c2233');
+ c.fillStyle=pg;c.beginPath();c.ellipse(0,-102,58,92,0,0,TAU);c.fill();
+ c.strokeStyle=open?'#b8ffe8':'#f6da94';c.lineWidth=5;c.stroke();
+ // Keystone crystal
+ c.fillStyle=open?'#a8ffea':'#f8d88a';c.strokeStyle='#152834';c.lineWidth=2.4;
+ c.beginPath();c.moveTo(0,-240);c.lineTo(14,-218);c.lineTo(0,-196);c.lineTo(-14,-218);c.closePath();c.fill();c.stroke();
+ c.font='bold 42px Georgia';c.fillStyle=open?'#ecfff8':'#f4e5b8';c.textAlign='center';c.fillText(open?'✦':'◇',0,-94);
+ // Crisp DISCOVER / OPEN plaque
+ c.fillStyle=open?'#124d51':'#0d3545';c.strokeStyle='#f8d490';c.lineWidth=3.5;
+ pathRound(c,-88,-54,176,40,10);c.fill();c.stroke();
+ c.font='900 19px system-ui, sans-serif';c.fillStyle='#fff3ca';c.fillText('DISCOVER',0,-28);
+ if(open){c.font='bold 11px system-ui';c.fillStyle='#c5fff1';c.fillText('OPEN',0,-8);}
+ c.restore()}
+ actor(state,cam,t){
+ const c=this.ctx;
+ // Heroic grounded lookout stance on the Title screen (no awkward moonwalking!)
+ const titleGround=this.stage?.ground||584;
+ const player=state.scene==='title'?{x:cam+815,y:titleGround-62,w:38,h:62,vx:0,vy:0,face:1,inv:0,run:0,grounded:true,cast:0,land:0}:state.player;
+ if(!player)return;
  const x=player.x-cam,feet=player.y+player.h;if(player.inv>0&&!(state.feel?.dashTimer>0)&&Math.sin(player.inv*28)>0)return;
  const pose=this.heroMixer.update(player,t),sheets=['cape.png','rear-arm.png','back-leg-v141.png','body-v1411-clean.png','front-leg.png','front-arm-v1411-clean.png'];
  const fullyLoaded=sheets.every(k=>ready(`animation/ari/${k}`));
- c.save();c.fillStyle='#051b2288';c.beginPath();c.ellipse(x,feet+3,34,6,0,0,TAU);c.fill();
- c.translate(x,feet+pose.bob+this.ariContactOffset(pose,player));c.scale(player.face===-1?-1:1,1);c.rotate(pose.lean);
- if(fullyLoaded){c.translate(-74,-116);c.scale(149/285,125/235*pose.squash);
-  this.limbPart('animation/ari/cape.png',[145,80],pose.scarf,-2*Math.sin(t*.008),0);
-  // Arm and thigh joint underpainting only appears while their separately masked sprites swing.
-  c.fillStyle='#375478';c.beginPath();c.ellipse(146,147,17,13,0,0,TAU);c.ellipse(188,143,17,13,0,0,TAU);c.fill();
-  this.limbPart('animation/ari/rear-arm.png',[132,94],pose.arms[0]);
-  if(!this.articulatedLeg('rear',[147,145],[120,168],clamp(pose.legs[1]*.78,-.49,.49),pose.ankles?.[1]||0,pose.legLift?.[1]||0))
-   this.limbPart('animation/ari/back-leg-v141.png',[147,145],clamp(pose.legs[1]*.78,-.49,.49),0,pose.legLift?.[1]||0);
-  this.drawImage(ready('animation/ari/body-v1411-clean.png'),0,0,285,235);
-  if(!this.articulatedLeg('front',[187,141],[217,166],clamp(pose.legs[0]*.79,-.49,.49),pose.ankles?.[0]||0,pose.legLift?.[0]||0))
-   this.limbPart('animation/ari/front-leg.png',[187,141],clamp(pose.legs[0]*.79,-.49,.49),0,pose.legLift?.[0]||0);
-  this.limbPart('animation/ari/front-arm-v1411-clean.png',[209,101],pose.arms[1]);
-  if(this.debugCharacter){const cc=this.ctx;cc.save();cc.lineWidth=1.6;cc.strokeStyle='#fef56b';cc.strokeRect(0,0,285,235);for(const [px,py,col] of [[147,145,'#ff8b8b'],[187,141,'#88f0ff']]){cc.strokeStyle=col;cc.beginPath();cc.arc(px,py,6,0,Math.PI*2);cc.stroke();}cc.restore();}
- }else{this.drawImage(ready('ari.png'),-74,-116,149,125)}
+ const groundY=state.scene==='title'?titleGround:(state.levelData?.ground??feet);
+ const fx=evaluateHeroMotionFX(player,pose,state.scene==='title'?null:state.feel,t,groundY,this._heroFXScratch||(this._heroFXScratch={lastFace:1,turnScale:1,lastTime:t}));
+ const face=player.face===-1?-1:1;
+ c.save();
+ // Height-accurate grounded shadow (shrinks softly as Ari leaps high!)
+ c.fillStyle=`rgba(5,24,30,${fx.shadowAlpha.toFixed(2)})`;
+ c.beginPath();c.ellipse(x,Math.min(groundY+3,feet+3),34*fx.shadowScale,6.2*fx.shadowScale,0,0,TAU);c.fill();
+ // Anchor volume-preserving squash-stretch AT FEET PIVOT so landing never floats Ari off the ground
+ if(!this.useLegacyAriRig){
+  const skel=evaluateAriSkeleton(player,pose,state.scene==='title'?null:state.feel,t);
+  const athleticScale=1.04;
+  const softSy=1+(fx.scaleY-1)*0.52;
+  const softSx=1/Math.sqrt(clamp(softSy,0.85,1.18));
+  c.translate(x,feet);
+  c.scale(player.face===-1?-1:1,1);
+  c.scale(softSx*fx.turnScale*athleticScale,softSy*athleticScale);
+  drawAthleticAri(c,skel);
+  if(fx.castGlow>0.05&&skel.frontArm?.hand){
+   this.vfx.drawGlow(c,skel.frontArm.hand.x+4,skel.frontArm.hand.y-1,38*fx.castGlow,'cyan',.75*fx.castGlow);
+  }
+ }else{
+  c.translate(x,feet+pose.bob+this.ariContactOffset(pose,player));
+  c.scale(player.face===-1?-1:1,1);
+  c.scale(fx.scaleX*fx.turnScale,fx.scaleY);
+  c.rotate(pose.lean+fx.extraLean);
+  if(fullyLoaded){c.translate(-74,-116);c.scale(149/285,125/235);
+   const capeWave=state.scene==='title'?Math.sin(t*.0042)*.14:Math.sin(t*.008+fx.capeBoost*4)*(.05+fx.capeBoost*.22);
+   this.limbPart('animation/ari/cape.png',[145,80],pose.scarf-fx.capeBoost*.65+capeWave,-2*Math.sin(t*.007),0);
+   c.fillStyle='#2c4564';c.beginPath();c.ellipse(149,146,13,10,0,0,TAU);c.ellipse(185,143,13,10,0,0,TAU);c.fill();
+   this.limbPart('animation/ari/rear-arm.png',[132,94],pose.arms[0]);
+   if(!this.articulatedLeg('rear',[147,145],[120,168],clamp(pose.legs[1]*.78,-.49,.49),pose.ankles?.[1]||0,pose.legLift?.[1]||0))
+    this.limbPart('animation/ari/back-leg-v141.png',[147,145],clamp(pose.legs[1]*.78,-.49,.49),0,pose.legLift?.[1]||0);
+   this.drawImage(ready('animation/ari/body-v1411-clean.png'),0,0,285,235);
+   if(!this.articulatedLeg('front',[187,141],[217,166],clamp(pose.legs[0]*.79,-.49,.49),pose.ankles?.[0]||0,pose.legLift?.[0]||0))
+    this.limbPart('animation/ari/front-leg.png',[187,141],clamp(pose.legs[0]*.79,-.49,.49),0,pose.legLift?.[0]||0);
+   this.limbPart('animation/ari/front-arm-v1411-clean.png',[209,101],pose.arms[1]);
+   if(this.debugCharacter){const cc=this.ctx;cc.save();cc.lineWidth=1.6;cc.strokeStyle='#fef56b';cc.strokeRect(0,0,285,235);for(const [px,py,col] of [[147,145,'#ff8b8b'],[187,141,'#88f0ff']]){cc.strokeStyle=col;cc.beginPath();cc.arc(px,py,6,0,Math.PI*2);cc.stroke();}cc.restore();}
+  }else{this.drawImage(ready('ari.png'),-74,-116,149,125)}
+ }
  c.restore();
  // Trigger footstep cues only on contact changes. Effects follow the grounded foot.
  for(const event of pose.events){
@@ -341,7 +456,7 @@ const c=this.ctx;const sym={math:'∑',english:'Aa',science:'⚗',general:'✧'}
  }
  fogForeground(t){const c=this.ctx;const a=c.createLinearGradient(0,500,0,720);a.addColorStop(0,'#a0e9d300');a.addColorStop(.77,'#99edd10d');a.addColorStop(1,'#072d2966');c.fillStyle=a;c.fillRect(0,500,WIDTH,220);const b=c.createRadialGradient(640,310,430,640,310,900);b.addColorStop(0,'#101e1700');b.addColorStop(1,'#081a2875');c.fillStyle=b;c.fillRect(0,0,WIDTH,HEIGHT)}
  frame(state,time){const ctx=this.ctx;if(!this.ctx)return;this.frames++;this.wave=time*.002;const allowed=['play','question','answering','pause','win','dead'];const demo=!allowed.includes(state.scene),d=demo?this.stage:state.levelData;if(!d)return;if(this.stageId!==d.id)this.setStage(d);const demoPan=demo?Math.sin(time*.00028)*140+160:0;const camera=demo?demoPan:state.camera;
- ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality=this.perfMode?'medium':'high';if(!this._lastFpsCheck)this._lastFpsCheck=time;this._fpsFrames++;if(time-this._lastFpsCheck>3000){const fps=(this._fpsFrames*1000)/(time-this._lastFpsCheck);if(fps<30&&!this.perfMode){this.perfMode=true;try{localStorage.setItem('leap-perf','1')}catch(e){}}this._lastFpsCheck=time;this._fpsFrames=0;}
+ ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality=this.perfMode?'low':'medium';if(!this._lastFpsCheck)this._lastFpsCheck=time;this._fpsFrames++;if(time-this._lastFpsCheck>3000){const fps=(this._fpsFrames*1000)/(time-this._lastFpsCheck);if(fps<30&&!this.perfMode){this.perfMode=true;try{localStorage.setItem('leap-perf','1')}catch(e){}}this._lastFpsCheck=time;this._fpsFrames=0;}
  // Apply trauma-squared camera shake in gameplay
  const shakeX=!demo&&state.feel?Math.sin(time*.067)*(state.feel.trauma*state.feel.trauma*14):(!demo&&state.shake>0?Math.sin(time*.07)*state.shake*.5:0);
  const shakeY=!demo&&state.feel?Math.cos(time*.089)*(state.feel.trauma*state.feel.trauma*10):(!demo&&state.shake>0?Math.cos(time*.09)*state.shake*.35:0);

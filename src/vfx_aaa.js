@@ -4,6 +4,9 @@
  * every world looks rich, luminous, and atmospheric at locked 60 FPS on desktop, mobile & headless.
  */
 
+import { evaluateAriSkeleton } from './ari_rig.js';
+import { drawAthleticAri } from './ari_renderer.js';
+
 const WIDTH = 1280;
 const HEIGHT = 720;
 const TAU = Math.PI * 2;
@@ -94,28 +97,27 @@ export class AAAVisualEngine {
    */
   drawVolumetricRays(ctx, worldIndex, cam, time, perfMode = false) {
     const atmo = this.getAtmo(worldIndex);
-    const count = perfMode ? 3 : 5;
+    const count = perfMode ? 2 : 4;
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < count; i++) {
-      const baseX = ((i * 340 + 180 - cam * 0.11) % (WIDTH + 520) + (WIDTH + 520)) % (WIDTH + 520) - 240;
-      const sway = Math.sin(time * 0.00055 + i * 1.9) * 28;
+      const baseX = ((i * 360 + 160 - cam * 0.11) % (WIDTH + 520) + (WIDTH + 520)) % (WIDTH + 520) - 240;
+      const sway = Math.sin(time * 0.00055 + i * 1.9) * 26;
       const topX = baseX + sway;
-      const topW = 72 + (i % 3) * 34;
-      const botOffset = 195 + (i % 2) * 55;
-      const botW = topW * 2.15;
+      const topW = 68 + (i % 3) * 30;
+      const botOffset = 185 + (i % 2) * 55;
+      const botW = topW * 2.1;
       const pulse = 0.72 + 0.28 * Math.sin(time * 0.0009 + i * 2.4);
-      const grad = ctx.createLinearGradient(topX, 0, topX + botOffset * 0.45, HEIGHT * 0.88);
+      const grad = ctx.createLinearGradient(topX, 0, topX + botOffset * 0.45, HEIGHT * 0.85);
       grad.addColorStop(0, atmo.ray);
-      grad.addColorStop(0.55, atmo.ray);
+      grad.addColorStop(0.5, atmo.ray);
       grad.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.globalAlpha = atmo.rayAlpha * pulse;
+      ctx.globalAlpha = atmo.rayAlpha * 0.85 * pulse;
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(topX, -20);
       ctx.lineTo(topX + topW, -20);
-      ctx.lineTo(topX + botOffset + botW, HEIGHT * 0.9);
-      ctx.lineTo(topX + botOffset, HEIGHT * 0.9);
+      ctx.lineTo(topX + botOffset + botW, HEIGHT * 0.86);
+      ctx.lineTo(topX + botOffset, HEIGHT * 0.86);
       ctx.closePath();
       ctx.fill();
     }
@@ -301,22 +303,25 @@ export class AAAVisualEngine {
       ctx.restore();
     }
 
-    // Spirit Dash translucent afterimages
+    // Spirit Dash translucent afterimages using the new athletic Ari silhouette
     if (feel?.afterimages?.length) {
-      const heroImg = readyFn?.('animation/ari/body-v1411-clean.png') || readyFn?.('ari.png');
+      const dashSkel = evaluateAriSkeleton(
+        { vx: 520, vy: 0, grounded: true, run: time * 0.01 },
+        null,
+        { dashTimer: 0.14 },
+        time
+      );
       ctx.save();
       for (const a of feel.afterimages) {
         const sx = a.x - cam;
         const ratio = Math.max(0, a.life / a.maxLife);
-        this.drawGlow(ctx, sx, a.y - 44, 42 * ratio, 'cyan', ratio * 0.42);
-        if (heroImg && (heroImg.naturalWidth || heroImg.width)) {
-          ctx.save();
-          ctx.globalAlpha = ratio * 0.32;
-          ctx.translate(sx, a.y);
-          ctx.scale(a.face === -1 ? -1 : 1, 1);
-          ctx.drawImage(heroImg, -68, -110, 138, 116);
-          ctx.restore();
-        }
+        this.drawGlow(ctx, sx, a.y - 48, 46 * ratio, 'cyan', ratio * 0.44);
+        ctx.save();
+        ctx.globalAlpha = ratio * 0.36;
+        ctx.translate(sx, a.y);
+        ctx.scale((a.face === -1 ? -1 : 1) * 1.04, 1.04);
+        drawAthleticAri(ctx, dashSkel, { ghostTint: 'rgba(116, 244, 255, 0.88)' });
+        ctx.restore();
       }
       ctx.restore();
     }
